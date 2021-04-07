@@ -1,6 +1,6 @@
 /*
 
-go-re - Make regexps fun again!
+Regexp like a Perl Pumpking in Go!
 
 Rationale:
  #Perl5:
@@ -26,7 +26,7 @@ Notes:
  - No unicode support!
 
 */
-package main
+package re
 
 import (
 	"fmt"
