@@ -2,6 +2,7 @@ package re
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -147,6 +148,11 @@ paavo: "pesus" - 2020-10-31T21:39:39.4321+0230`,
 		So(r.Z["decimal"], ShouldEqual, "4321")
 		So(r.Z["timezone"], ShouldEqual, "+0230")
 	})
+	Convey("regexp cache", t, func() {
+		So(len(regexpCache.cache), ShouldBeGreaterThan, 10)
+		regexpCache.Flush()
+		So(len(regexpCache.cache), ShouldEqual, 0)
+	})
 }
 
 func runMatchTest(haystack string, needle string, matches int, captures []string, nCaptures map[string]string) *RE {
@@ -175,4 +181,113 @@ func runSubstTest(haystackA string, needle string, expected string, matches int,
 	})
 
 	return r
+}
+
+func BenchmarkRECache_on_SimpleRE(b *testing.B) {
+	UseRECache = true
+	benchmarkRECacheComplexRE(b)
+}
+func BenchmarkRECache_on_ComplexRE(b *testing.B) {
+	UseRECache = true
+	benchmarkRECacheComplexRE(b)
+}
+func BenchmarkRECache_off_SimpleRE(b *testing.B) {
+	UseRECache = false
+	benchmarkRECacheComplexRE(b)
+}
+func BenchmarkRECache_off_ComplexRE(b *testing.B) {
+	UseRECache = false
+	benchmarkRECacheComplexRE(b)
+}
+func benchmarkRECacheSimpleRE(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		M("kalle ankka", `m/kalle ankka/`)
+		if R0.Matches == 0 {
+			b.Errorf("BenchmarkRECacheSimpleRE regexp doesnt match?")
+		}
+	}
+}
+func benchmarkRECacheComplexRE(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		M(`
+kalle: "ankka" - 2021-12-31 23:59:59.0123+0200Z
+paavo: "pesus" - 2020-10-31T21:39:39.4321+0230`,
+			`m/
+			# this is a comment which encompasses the whole line
+				^
+				(?P<username>\w+) # This is a comment too
+				:\s+
+				"(?P<surname>\w+)"
+				\s+ - \s+
+				(?P<year>\d{4})
+				-
+				(?P<month>\d{2})
+				-
+				(?P<day>\d{2})
+				[T ]
+				(?P<hour>\d{2})
+				:
+				(?P<minute>\d{2})
+				:
+				(?P<second>\d{2})
+				(?:\.
+				(?P<decimal>\d{1,4}))?
+				(?:(?P<timezone>[+-]\d{2,4})Z?)?
+				$
+			/xgms`)
+		if R0.Matches == 0 {
+			b.Errorf("BenchmarkRECacheComplexRE regexp doesnt match?")
+		}
+	}
+}
+func BenchmarkNativeGolangRegexNamedCaptureGroup(b *testing.B) {
+	parseISO8601Regexp := regexp.MustCompile(
+		`^` +
+			`(?P<username>\w+)` +
+			`:\s+` +
+			`"(?P<surname>\w+)"` +
+			`\s+-\s+` +
+			`(?P<year>\d{4})` +
+			`-` +
+			`(?P<month>\d{2})` +
+			`-` +
+			`(?P<day>\d{2})` +
+			`[T ]` +
+			`(?P<hour>\d{2})` +
+			`:` +
+			`(?P<minute>\d{2})` +
+			`:` +
+			`(?P<second>\d{2})` +
+			`(?:\.` +
+			`(?P<decimal>\d{1,4}))?` +
+			`(?:(?P<timezone>[+-]\d{2,4})Z?)?` +
+			`$`)
+	for i := 0; i < b.N; i++ {
+		benchmarkNativeGolangRegexNamedCaptureGroup(parseISO8601Regexp, b)
+	}
+}
+func benchmarkNativeGolangRegexNamedCaptureGroup(parseISO8601Regexp *regexp.Regexp, b *testing.B) {
+	capture, err := parseNamedCaptureGroupsRegex(`kalle: "ankka" - 2021-12-31 23:59:59.0123+0200Z`, parseISO8601Regexp)
+	if err != nil {
+		b.Errorf("%+v\n", err)
+	}
+	if len(capture) == 0 {
+		b.Errorf("No captures?\n")
+	}
+}
+func parseNamedCaptureGroupsRegex(textRow string, regexpStr *regexp.Regexp) (map[string]string, error) {
+	subexpNames := regexpStr.SubexpNames()
+	namedCaptureGroups := make(map[string]string, len(subexpNames))
+	matches := regexpStr.FindAllStringSubmatch(textRow, -1)
+	if matches == nil {
+		return namedCaptureGroups, fmt.Errorf("Unable to parse text '%s' using regexp '%s'\n", textRow, regexpStr)
+	}
+	for _, match := range matches {
+		for groupIdx, group := range match {
+			if group != "" {
+				namedCaptureGroups[subexpNames[groupIdx]] = group
+			}
+		}
+	}
+	return namedCaptureGroups, nil
 }

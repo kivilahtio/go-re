@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type RE struct {
@@ -54,6 +55,45 @@ type RE struct {
 }
 
 var R0 *RE // The result of the latest regexp operation. Not thread-safe! It could be if Go had thread-local variables or a way to identify the running thread.
+
+var UseRECache bool = true // Enable/Disable the transparent RECache
+/*
+Inspired by https://github.com/patrickmn/go-cache
+
+Transparently caches given regexps to save on the expensive computation
+*/
+type RECache struct {
+	cache map[string]*RE
+	mu    sync.RWMutex
+}
+
+func NewRECache() *RECache {
+	return &RECache{
+		cache: make(map[string]*RE),
+	}
+}
+func (self *RECache) PutStr(regex string, re *RE) *RE {
+	return self.Put(&regex, re)
+}
+func (self *RECache) Put(regex *string, re *RE) *RE {
+	self.mu.Lock()
+	self.cache[*regex] = re
+	self.mu.Unlock()
+	return self.cache[*regex]
+}
+func (self *RECache) GetStr(regex string) *RE {
+	return self.Get(&regex)
+}
+func (self *RECache) Get(regex *string) *RE {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+	return self.cache[*regex]
+}
+func (self *RECache) Flush() {
+	self.cache = make(map[string]*RE)
+}
+
+var regexpCache = NewRECache()
 
 /*
 R is useful if you don't know the type of the regex (match/substitute) beforehand and need to dynamically do things.
@@ -119,8 +159,6 @@ func Ss(haystack string, needle string) string {
 }
 
 func m(haystack *string, r *RE) *RE {
-	r.regex = regexp.MustCompile(*r.n)
-
 	if strings.Contains(*r.f, "g") {
 		captureGroups := r.regex.FindAllStringSubmatch(*haystack, -1)
 		if captureGroups == nil {
@@ -158,8 +196,6 @@ func m(haystack *string, r *RE) *RE {
 }
 
 func s(haystack *string, r *RE) *RE {
-	r.regex = regexp.MustCompile(*r.n)
-
 	result := []byte{}
 	if strings.Contains(*r.f, "g") {
 		if r.captures {
@@ -220,7 +256,15 @@ func captureGroup(r *RE, captures []string, captureGroupsIteration int, namedCap
 }
 
 func regexParser(needle *string) *RE {
-	r := &RE{
+	var r *RE
+	if UseRECache {
+		r = regexpCache.Get(needle)
+		if r != nil {
+			return r
+		}
+	}
+
+	r = &RE{
 		_orig: *needle,
 		mode:  'm',
 	}
@@ -299,6 +343,10 @@ func regexParser(needle *string) *RE {
 	flagHandler_x(r)
 	flagHandlerGoNative(r)
 
+	r.regex = regexp.MustCompile(*r.n)
+	if UseRECache {
+		return regexpCache.Put(needle, r)
+	}
 	return r
 }
 
