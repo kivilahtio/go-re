@@ -159,6 +159,7 @@ func Ss(haystack string, needle string) string {
 }
 
 func m(haystack *string, r *RE) *RE {
+	R0 = r
 	if strings.Contains(*r.f, "g") {
 		captureGroups := r.regex.FindAllStringSubmatch(*haystack, -1)
 		if captureGroups == nil {
@@ -191,11 +192,11 @@ func m(haystack *string, r *RE) *RE {
 			captureGroup(r, captures, 0, namedCaptureGroups)
 		}
 	}
-	R0 = r
 	return r
 }
 
 func s(haystack *string, r *RE) *RE {
+	R0 = r
 	result := []byte{}
 	if strings.Contains(*r.f, "g") {
 		if r.captures {
@@ -239,8 +240,6 @@ func s(haystack *string, r *RE) *RE {
 			*haystack = (*haystack)[:captureIdxs[0]] + string(result) + (*haystack)[captureIdxs[1]:]
 		}
 	}
-
-	R0 = r
 	return r
 }
 

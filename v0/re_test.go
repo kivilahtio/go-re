@@ -162,8 +162,11 @@ func runMatchTest(haystack string, needle string, matches int, captures []string
 		r = Mr(haystack, needle)
 
 		So(r.Matches, ShouldEqual, matches)
+		So(R0.Matches, ShouldEqual, matches)
 		So(r.S, ShouldResemble, captures)
+		So(R0.S, ShouldResemble, captures)
 		So(r.Z, ShouldResemble, nCaptures)
+		So(R0.Z, ShouldResemble, nCaptures)
 	})
 
 	return r
@@ -177,8 +180,11 @@ func runSubstTest(haystackA string, needle string, expected string, matches int,
 
 		So(*haystack, ShouldEqual, expected)
 		So(r.Matches, ShouldEqual, matches)
+		So(R0.Matches, ShouldEqual, matches)
 		So(r.S, ShouldResemble, captures)
+		So(R0.S, ShouldResemble, captures)
 		So(r.Z, ShouldResemble, nCaptures)
+		So(R0.Z, ShouldResemble, nCaptures)
 	})
 
 	return r
