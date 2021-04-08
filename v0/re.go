@@ -86,8 +86,14 @@ func (self *RECache) GetStr(regex string) *RE {
 }
 func (self *RECache) Get(regex *string) *RE {
 	self.mu.Lock()
-	defer self.mu.Unlock()
-	return self.cache[*regex]
+	copyPtr := self.cache[*regex]
+	if copyPtr == nil {
+		self.mu.Unlock()
+		return nil
+	}
+	copy := *copyPtr
+	self.mu.Unlock()
+	return &copy
 }
 func (self *RECache) Flush() {
 	self.cache = make(map[string]*RE)

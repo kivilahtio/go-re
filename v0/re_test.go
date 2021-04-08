@@ -77,20 +77,24 @@ func TestUnit(t *testing.T) {
 	Convey("matching and capturing", t, func() {
 		var r *RE
 		_ = r
-		r = runMatchTest(" [28] ", `m!(?P<array>\[\d*\])!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"})
-		r = runMatchTest("[28]", `m!(?P<array>\[\d*\])?!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"}) // Why leading whitespace makes this match fail?
+		r = runMatchTest(" [28] ", `m!(?P<array>\[\d*\])!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"}, "")
+		r = runMatchTest("[28]", `m!(?P<array>\[\d*\])?!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"}, "") // Why leading whitespace makes this match fail?
 		r = runMatchTest(" !28! ", `m/(?P<noemptyoverload>!\d+!)(?P<noemptyoverload>\d+)?/`, 1, []string{"", "!28!", ""},
-			map[string]string{"noemptyoverload": "!28!"}) // With multiple named captures, avoid overwriting previous good captures with future empty captures
-		r = runMatchTest("kalle ankka", `m/kalle ankka/`, 1, nilCapture, nilNameCap)
-		r = runMatchTest("kalle/ankka", `m/kalle\/ankka/`, 1, nilCapture, nilNameCap)
-		r = runMatchTest("kalle ankka", `m/a/`, 1, nilCapture, nilNameCap)
-		r = runMatchTest("kalle ankka", `m/a/g`, 3, nilCapture, nilNameCap)
-		r = runMatchTest("kalle ankka", `m/(a.)/g`, 2, []string{"", "al", "an"}, nilNameCap)
-		r = runMatchTest("bubbelbubbe", `m/(a.)/g`, 0, nilCapture, nilNameCap) // The regexp is cached and now it shouldn't match after a succesful match
-		r = runMatchTest("kalle ankka", `m/(?:a.)/g`, 2, nilCapture, nilNameCap)
-		r = runMatchTest("kalle ankka", `m!a!g`, 3, nilCapture, nilNameCap)
-		r = runMatchTest("kalle#ankka", `m!([ #])!g`, 1, []string{"", "#"}, nilNameCap)
-		r = runMatchTest("kaLlE AnKka", `m!(?P<aleph>[e])!gi`, 1, []string{"", "E"}, map[string]string{"aleph": "E"})
+			map[string]string{"noemptyoverload": "!28!"}, "With multiple named captures, avoid overwriting previous good captures with future empty captures")
+		r = runMatchTest("kalle ankka", `m/kalle ankka/`, 1, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle/ankka", `m/kalle\/ankka/`, 1, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle ankka", `m/a/`, 1, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle ankka", `m/a/g`, 3, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle ankka", `m/(?:a.)/g`, 2, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle ankka", `m!a!g`, 3, nilCapture, nilNameCap, "")
+		r = runMatchTest("kalle#ankka", `m!([ #])!g`, 1, []string{"", "#"}, nilNameCap, "")
+		r = runMatchTest("kaLlE AnKka", `m!(?P<aleph>[e])!gi`, 1, []string{"", "E"}, map[string]string{"aleph": "E"}, "")
+	})
+	Convey("cache reuse reference tainting regression", t, func() {
+		runMatchTest("kalle ankka", `m/(a.)/g`, 2, []string{"", "al", "an"}, nilNameCap, "Cache a copy of the regexp")
+		runMatchTest("bubbelbubbe", `m/(a.)/g`, 0, nilCapture, nilNameCap, "The regexp is cached and now it shouldn't match after a succesful match")
+		runMatchTest("kalle ankka", `m/(a.)/g`, 2, []string{"", "al", "an"}, nilNameCap, "Retrieve the cached copy, and access a copy of the cached copy to prevent reuse reference tainting.")
+		runMatchTest("bubbelbubbe", `m/(a.)/g`, 0, nilCapture, nilNameCap, "The regexp was cached and now it shouldn't match after a succesful match")
 	})
 	Convey("substitution", t, func() {
 		var r *RE
@@ -161,9 +165,9 @@ paavo: "pesus" - 2020-10-31T21:39:39.4321+0230`,
 	})
 }
 
-func runMatchTest(haystack string, needle string, matches int, captures []string, nCaptures map[string]string) *RE {
+func runMatchTest(haystack string, needle string, matches int, captures []string, nCaptures map[string]string, description string) *RE {
 	var r *RE
-	Convey(fmt.Sprintf(`"%s" match "%s" '%d' times! Captures='%d', Named captures='%d'`, needle, haystack, matches, len(captures)-1, len(nCaptures)), func() {
+	Convey(fmt.Sprintf(`%s: "%s" match "%s" '%d' times! Captures='%d', Named captures='%d'`, description, needle, haystack, matches, len(captures)-1, len(nCaptures)), func() {
 		r = Mr(haystack, needle)
 
 		So(r.Matches, ShouldEqual, matches)
