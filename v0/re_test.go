@@ -77,6 +77,8 @@ func TestUnit(t *testing.T) {
 	Convey("matching and capturing", t, func() {
 		var r *RE
 		_ = r
+		r = runMatchTest(" [28] ", `m!(?P<array>\[\d*\])!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"})
+		r = runMatchTest("[28]", `m!(?P<array>\[\d*\])?!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"}) // Why leading whitespace makes this match fail?
 		r = runMatchTest("kalle ankka", `m/kalle ankka/`, 1, nilCapture, nilNameCap)
 		r = runMatchTest("kalle/ankka", `m/kalle\/ankka/`, 1, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m/a/`, 1, nilCapture, nilNameCap)
@@ -85,6 +87,7 @@ func TestUnit(t *testing.T) {
 		r = runMatchTest("bubbelbubbe", `m/(a.)/g`, 0, nilCapture, nilNameCap) // The regexp is cached and now it shouldn't match after a succesful match
 		r = runMatchTest("kalle ankka", `m/(?:a.)/g`, 2, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m!a!g`, 3, nilCapture, nilNameCap)
+		r = runMatchTest("kalle#ankka", `m!([ #])!g`, 1, []string{"", "#"}, nilNameCap)
 		r = runMatchTest("kaLlE AnKka", `m!(?P<aleph>[e])!gi`, 1, []string{"", "E"}, map[string]string{"aleph": "E"})
 	})
 	Convey("substitution", t, func() {
@@ -114,7 +117,7 @@ paavo: "pesus" - 2020-10-31T21:39:39.4321+0230`,
 				(?P<month>\d{2})
 				-
 				(?P<day>\d{2})
-				[T ]
+				[T #]
 				(?P<hour>\d{2})
 				:
 				(?P<minute>\d{2})

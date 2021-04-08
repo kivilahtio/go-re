@@ -404,8 +404,12 @@ func flagHandler_x_(r *RE, regstr *string) {
 			sb.WriteByte((*regstr)[i])
 			continue
 		case '#':
-			inComment = true
-			continue
+			if inBracketedCharacterClass {
+
+			} else {
+				inComment = true
+				continue
+			}
 		case '\t', '\n', '\v', '\f', '\r', ' ':
 			if !inBracketedCharacterClass {
 				continue
