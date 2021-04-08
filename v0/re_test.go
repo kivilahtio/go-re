@@ -82,6 +82,7 @@ func TestUnit(t *testing.T) {
 		r = runMatchTest("kalle ankka", `m/a/`, 1, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m/a/g`, 3, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m/(a.)/g`, 2, []string{"", "al", "an"}, nilNameCap)
+		r = runMatchTest("bubbelbubbe", `m/(a.)/g`, 0, nilCapture, nilNameCap) // The regexp is cached and now it shouldn't match after a succesful match
 		r = runMatchTest("kalle ankka", `m/(?:a.)/g`, 2, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m!a!g`, 3, nilCapture, nilNameCap)
 		r = runMatchTest("kaLlE AnKka", `m!(?P<aleph>[e])!gi`, 1, []string{"", "E"}, map[string]string{"aleph": "E"})

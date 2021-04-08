@@ -72,14 +72,14 @@ func NewRECache() *RECache {
 		cache: make(map[string]*RE),
 	}
 }
-func (self *RECache) PutStr(regex string, re *RE) *RE {
-	return self.Put(&regex, re)
+func (self *RECache) PutStr(regex string, re *RE) {
+	self.Put(&regex, re)
 }
-func (self *RECache) Put(regex *string, re *RE) *RE {
+func (self *RECache) Put(regex *string, re *RE) {
+	copy := *re
 	self.mu.Lock()
-	self.cache[*regex] = re
+	self.cache[*regex] = &copy
 	self.mu.Unlock()
-	return self.cache[*regex]
 }
 func (self *RECache) GetStr(regex string) *RE {
 	return self.Get(&regex)
@@ -345,7 +345,7 @@ func regexParser(needle *string) *RE {
 
 	r.regex = regexp.MustCompile(*r.n)
 	if UseRECache {
-		return regexpCache.Put(needle, r)
+		regexpCache.Put(needle, r)
 	}
 	return r
 }
