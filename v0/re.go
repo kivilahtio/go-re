@@ -247,7 +247,7 @@ func captureGroup(r *RE, captures []string, captureGroupsIteration int, namedCap
 	for j := 1; j < len(captures); j++ {
 		r.S[(captureGroupsIteration*(len(captures)-1))+j] = captures[j]
 		if j < len(namedCaptureGroups) {
-			if namedCaptureGroup := namedCaptureGroups[j]; namedCaptureGroup != "" {
+			if namedCaptureGroup := namedCaptureGroups[j]; namedCaptureGroup != "" && captures[j] != "" {
 				r.Z[namedCaptureGroup] = captures[j]
 			}
 		}

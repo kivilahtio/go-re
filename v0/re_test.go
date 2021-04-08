@@ -79,6 +79,8 @@ func TestUnit(t *testing.T) {
 		_ = r
 		r = runMatchTest(" [28] ", `m!(?P<array>\[\d*\])!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"})
 		r = runMatchTest("[28]", `m!(?P<array>\[\d*\])?!`, 1, []string{"", "[28]"}, map[string]string{"array": "[28]"}) // Why leading whitespace makes this match fail?
+		r = runMatchTest(" !28! ", `m/(?P<noemptyoverload>!\d+!)(?P<noemptyoverload>\d+)?/`, 1, []string{"", "!28!", ""},
+			map[string]string{"noemptyoverload": "!28!"}) // With multiple named captures, avoid overwriting previous good captures with future empty captures
 		r = runMatchTest("kalle ankka", `m/kalle ankka/`, 1, nilCapture, nilNameCap)
 		r = runMatchTest("kalle/ankka", `m/kalle\/ankka/`, 1, nilCapture, nilNameCap)
 		r = runMatchTest("kalle ankka", `m/a/`, 1, nilCapture, nilNameCap)
