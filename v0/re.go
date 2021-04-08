@@ -187,7 +187,6 @@ func m(haystack *string, r *RE) *RE {
 			if r.nCaptures && len(namedCaptureGroups) > 1 {
 				r.Z = make(map[string]string, len(namedCaptureGroups))
 			}
-			r.Z = make(map[string]string, len(namedCaptureGroups))
 			r.S = make([]string, len(captures))
 			captureGroup(r, captures, 0, namedCaptureGroups)
 		}
@@ -228,7 +227,6 @@ func s(haystack *string, r *RE) *RE {
 			if r.nCaptures && len(namedCaptureGroups) > 1 {
 				r.Z = make(map[string]string, len(namedCaptureGroups))
 			}
-			r.Z = make(map[string]string, len(namedCaptureGroups))
 			r.S = make([]string, len(captures))
 			captureGroup(r, captures, 0, namedCaptureGroups)
 		}
