@@ -1,3 +1,12 @@
+/*
+This file is part of go-re
+
+Copyright © 2021 Technology Innovation Institute, United Arab Emirates
+
+Licensed under the Artistic License, Version 2.0 (the "License");
+    https://www.perlfoundation.org/artistic-license-20
+*/
+
 package xt
 
 import (
@@ -23,6 +32,6 @@ func TestRedistributableLicense(t *testing.T) {
 	Convey("LICENSE is Redistributable by pkg.go.dev", t, func() {
 		cov := licensecheck.Scan(license)
 		So(cov.Percent, ShouldBeGreaterThan, 90)
-		So(cov.Match[0].ID, ShouldEqual, "Artistic-1.0-Perl")
+		So(cov.Match[0].ID, ShouldEqual, "Artistic-2.0")
 	})
 }

@@ -1,5 +1,13 @@
 /*
+This file is part of go-re
 
+Copyright © 2021 Technology Innovation Institute, United Arab Emirates
+
+Licensed under the Artistic License, Version 2.0 (the "License");
+    https://www.perlfoundation.org/artistic-license-20
+*/
+
+/*
 Regexp like a Perl Pumpking in Go!
 
 Rationale:
