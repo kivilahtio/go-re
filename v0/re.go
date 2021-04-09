@@ -10,13 +10,14 @@ Licensed under the Artistic License, Version 2.0 (the "License");
 /*
 Regexp like a Perl Pumpking in Go!
 
+
 Rationale:
  #Perl5:
  $str =~ m/This is how (?<we>party!)/g
  $we = $1;
  $we = $+{we}
 
- #Golang:
+ //Golang:
  M(str, `m/This is how (?P<we>party!)/g`)
  we := R0.S[1]   // access the first capture group
  we = R0.Z["we"] // access the named capture group
@@ -31,7 +32,7 @@ Flags supported:
 Notes:
 
  - Named capture groups are overwritten with the last capture group when using global matching
- - No unicode support!
+ - Unicode might not work properly.
 
 */
 package re
@@ -62,37 +63,38 @@ type RE struct {
 	Z       map[string]string // %+ Named capture buffers
 }
 
-var R0 *RE // The result of the latest regexp operation. Not thread-safe! It could be if Go had thread-local variables or a way to identify the running thread.
+var R0 *RE = &RE{} // The result of the latest regexp operation. Not thread-safe! It could be if Go had thread-local variables or a way to identify the running thread.
 
-var UseRECache bool = true // Enable/Disable the transparent RECache
+var UseRECache bool = true // Enable/Disable transparent RE caching. With caching enabled, the performance of repeated regex operations is increased ~600%
+
 /*
 Inspired by https://github.com/patrickmn/go-cache
 
 Transparently caches given regexps to save on the expensive computation
 */
-type RECache struct {
+type reCache struct {
 	cache map[string]*RE
 	mu    sync.RWMutex
 }
 
-func NewRECache() *RECache {
-	return &RECache{
+func newRECache() *reCache {
+	return &reCache{
 		cache: make(map[string]*RE),
 	}
 }
-func (self *RECache) PutStr(regex string, re *RE) {
+func (self *reCache) PutStr(regex string, re *RE) {
 	self.Put(&regex, re)
 }
-func (self *RECache) Put(regex *string, re *RE) {
+func (self *reCache) Put(regex *string, re *RE) {
 	copy := *re
 	self.mu.Lock()
 	self.cache[*regex] = &copy
 	self.mu.Unlock()
 }
-func (self *RECache) GetStr(regex string) *RE {
+func (self *reCache) GetStr(regex string) *RE {
 	return self.Get(&regex)
 }
-func (self *RECache) Get(regex *string) *RE {
+func (self *reCache) Get(regex *string) *RE {
 	self.mu.Lock()
 	copyPtr := self.cache[*regex]
 	if copyPtr == nil {
@@ -103,11 +105,11 @@ func (self *RECache) Get(regex *string) *RE {
 	self.mu.Unlock()
 	return &copy
 }
-func (self *RECache) Flush() {
+func (self *reCache) Flush() {
 	self.cache = make(map[string]*RE)
 }
 
-var regexpCache = NewRECache()
+var regexpCache = newRECache()
 
 /*
 R is useful if you don't know the type of the regex (match/substitute) beforehand and need to dynamically do things.

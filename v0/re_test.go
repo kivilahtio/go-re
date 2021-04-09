@@ -36,7 +36,7 @@ func Example() {
 	(?:party|body) # Non-capturing substitution happening here
 	!              # close the matching pattern and begin with the substituting pattern
 	code
-	!gx            # cinally some flags, x is important to allow documenting the regexp
+	!gx            # finally some flags, x is important to allow documenting the regexp
 	`) {
 		fmt.Printf("Substitution: '%s'\n", str)
 		fmt.Printf("Non-capturing group does not get captured '%d'\n", len(R0.S))
